@@ -35,3 +35,13 @@
 2. Existing published plans keep 3×8–10 until an admin publishes a new plan version.
 3. Users on an assigned plan stay on their assigned version until a new version is assigned.
 4. Completed workouts keep exactly the weights and reps recorded.
+
+## Analytics (Phase 4)
+
+| Rule | Behaviour | Where |
+|---|---|---|
+| No invented zeros | Nutrition averages use logged days only; a day without entries is "not logged", never 0 kcal. | `reports.service.ts#weeklyReport`, `diary.service.ts#history` |
+| Weight trend | Several weigh-ins on one day are averaged; the moving average spans 7 *calendar* days, so gaps don't stretch it. Weekly rate is a least-squares slope. | `shared/src/utils/analytics.ts` |
+| Strength | Estimated 1RM uses Epley (reps capped at 12) on completed non-warm-up sets; shown as an estimate. | `shared/src/utils/workout.ts` |
+| Recommendations | Plain, goal-aware notes from the member's own data. With fewer than 5 logged days or 3 weigh-ins it asks for more data instead of judging. Never prescribes calorie numbers; repeated discomfort suggests seeing a qualified professional. | `weeklyRecommendations` |
+| Admin analytics | Aggregate counts only. A member's report requires their consent per area (progress / nutrition) and every view is audited. | `admin-reports.routes.ts` |

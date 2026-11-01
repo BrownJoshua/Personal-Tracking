@@ -10,7 +10,7 @@ shared        Types, enums, permissions, zod validation, calculations (used by a
 docs          Architecture, database schema, API reference, business rules
 ```
 
-**Status: Phases 1–3 built** (foundation, admin plans/meals/targets, member logging). See the [roadmap](#roadmap).
+**Status: Phases 1–4 built** (foundation, admin plans/meals/targets, member logging, analytics). See the [roadmap](#roadmap).
 
 ## Design
 
@@ -86,7 +86,7 @@ Completion condition — *an admin creates an exercise and a food item, and an a
 | **1 Foundation** ✅ | Auth, roles, profile, exercise & food masters, admin dashboard, audit log |
 | **2 Admin masters** ✅ | Workout plan builder (drag order, weekday or rotation schedule, versions, publish, duplicate, mobile preview), plan assignment, meal templates & assignment, target defaults, per-member target override |
 | **3 Mobile logging** ✅ | Today's workout, plan view, active workout logger (sets, warm-ups, notes, discomfort, pause/resume, rest timer, add/remove exercises), summary with PRs, history; food diary with targets, food search/recent/custom foods/saved meals/meal plans, nutrition history, weekly measurements, weight trend |
-| 4 Analytics | Strength progression charts, weekly report, admin analytics (with member consent) |
+| **4 Analytics** ✅ | Weight & waist charts with 7-day average and weekly rate, strength progression (e1RM, heaviest set, volume), weekly training volume, weekly report with recommendations, platform analytics, consent-gated member reports, in-app sharing controls |
 | 5 Integrations | Apple HealthKit (dev build), Strava OAuth + webhooks, food import adapter, de-duplication |
 | 6 Production | Security review, backups, monitoring, email provider, App Store |
 

@@ -9,6 +9,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { LookupsPage } from "./pages/LookupsPage";
 import { MealTemplatesPage } from "./pages/MealTemplatesPage";
 import { PlanBuilderPage } from "./pages/PlanBuilderPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { TargetSettingsPage } from "./pages/TargetSettingsPage";
 import { WorkoutPlansPage } from "./pages/WorkoutPlansPage";
 import { UsersPage } from "./pages/UsersPage";
@@ -34,10 +35,7 @@ export function App() {
             path="activity"
             element={<ComingSoonPage title="Activity Management" phase="Phase 5" items={["Activity types", "Strava and Apple Health sync status", "Import logs and de-duplication"]} />}
           />
-          <Route
-            path="reports"
-            element={<ComingSoonPage title="Reports & Analytics" phase="Phase 4" items={["Platform analytics", "User progress reports (with user consent)"]} />}
-          />
+          <Route path="reports" element={<ReportsPage />} />
           <Route
             path="settings"
             element={<ComingSoonPage title="System Settings" phase="Phase 6" items={["Permissions", "Integration credentials", "Application configuration"]} />}

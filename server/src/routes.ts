@@ -16,6 +16,8 @@ import { nutritionRouter } from "./modules/nutrition/diary.routes";
 import { adminTargetSettingsRouter } from "./modules/targets/targets.routes";
 import { adminAssignmentsRouter, adminPlansRouter } from "./modules/workouts/admin-plans.routes";
 import { workoutsRouter } from "./modules/workouts/workouts.routes";
+import { adminReportsRouter } from "./modules/reports/admin-reports.routes";
+import { reportsRouter } from "./modules/reports/reports.routes";
 
 export const apiRouter = Router();
 
@@ -35,6 +37,7 @@ apiRouter.use("/foods", authenticate, foodsRouter);
 apiRouter.use("/measurements", authenticate, measurementsRouter);
 apiRouter.use("/workouts", authenticate, workoutsRouter);
 apiRouter.use("/nutrition", authenticate, nutritionRouter);
+apiRouter.use("/reports", authenticate, reportsRouter);
 
 // ---- Admin ----
 // Every /admin route needs authentication plus at least the dashboard permission;
@@ -50,5 +53,6 @@ admin.use("/assignments", adminAssignmentsRouter);
 admin.use("/meal-templates", adminMealTemplatesRouter);
 admin.use("/meal-assignments", adminMealAssignmentsRouter);
 admin.use("/target-settings", adminTargetSettingsRouter);
+admin.use("/", adminReportsRouter);
 admin.use("/", adminRouter);
 apiRouter.use("/admin", admin);
