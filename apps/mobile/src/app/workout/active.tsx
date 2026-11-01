@@ -255,7 +255,7 @@ export default function ActiveWorkoutScreen() {
           <Row style={{ justifyContent: "space-between" }}>
             <View>
               <Text style={styles.h2}>{session.title}</Text>
-              <Text style={styles.muted}>{doneSets} working sets done{paused ? " · paused" : ""}</Text>
+              <Text style={styles.muted}>{doneSets} working {doneSets === 1 ? "set" : "sets"} done{paused ? " · paused" : ""}</Text>
             </View>
             <Text style={[styles.bigNumber, { fontSize: 26 }]} accessibilityLabel={`Elapsed ${formatDuration(elapsed)}`}>{formatDuration(elapsed)}</Text>
           </Row>

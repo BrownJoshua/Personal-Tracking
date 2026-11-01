@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RecompTrack — clickable demo</title>
+<style>
+  :root { color-scheme: dark; --text: #eef2f7; --muted: #a7b3c6; --primary: #2dd4bf; --border: rgba(255,255,255,.16); }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text);
+    background: radial-gradient(900px 600px at 8% 10%, rgba(45,212,191,.28), transparent 60%), radial-gradient(800px 600px at 92% 18%, rgba(129,140,248,.26), transparent 60%), linear-gradient(160deg, #0b1324, #0f2a3a); background-attachment: fixed; }
+  header { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 16px 20px; }
+  .brand { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+  .brand span { background: linear-gradient(135deg, #2dd4bf, #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tabs { display: flex; gap: 6px; padding: 4px; border-radius: 14px; background: rgba(255,255,255,.07); border: 1px solid var(--border); backdrop-filter: blur(16px); }
+  .tabs button { font: inherit; color: var(--text); background: none; border: 0; padding: 8px 14px; border-radius: 10px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: linear-gradient(135deg, rgba(45,212,191,.35), rgba(129,140,248,.25)); }
+  .note { margin: 0 20px 12px; padding: 10px 14px; border-radius: 12px; background: rgba(129,140,248,.14); border: 1px solid rgba(129,140,248,.35); color: #e0e7ff; }
+  .note b { color: #fff; }
+  main { padding: 0 20px 20px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 410px; gap: 20px; align-items: start; }
+  .frame { border: 1px solid var(--border); border-radius: 20px; overflow: hidden; background: #0b1324; box-shadow: 0 10px 30px rgba(2,6,23,.35); }
+  .admin iframe { width: 100%; height: calc(100vh - 150px); min-height: 640px; border: 0; display: block; }
+  .phone { width: 410px; padding: 12px; border-radius: 46px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.22); backdrop-filter: blur(18px); }
+  .phone iframe { width: 384px; height: 800px; border: 0; border-radius: 34px; display: block; background: #0b1324; }
+  .caption { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
+  [hidden] { display: none !important; }
+  @media (max-width: 1100px) { .stage { grid-template-columns: 1fr; } .phone { margin: 0 auto; } }
+  @media (max-width: 440px) { .phone { width: 100%; padding: 0; border: 0; background: none; } .phone iframe { width: 100%; height: calc(100vh - 150px); border-radius: 18px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Recomp<span>Track</span> <span style="color:var(--muted);font-weight:500;font-size:13px;-webkit-text-fill-color:var(--muted)">clickable demo</span></div>
+  <div class="tabs" role="tablist" aria-label="Choose what to show">
+    <button role="tab" id="t-both" aria-selected="true">Both</button>
+    <button role="tab" id="t-admin" aria-selected="false">Admin panel</button>
+    <button role="tab" id="t-app" aria-selected="false">Mobile app</button>
+  </div>
+</header>
+<p class="note">Sign in with <b>any email and password</b> — the admin panel signs you in as the admin, the app as the sample member “Ann”. Everything runs in your browser on sample data: nothing is saved, and reloading resets it.</p>
+<main>
+  <div class="stage" id="stage">
+    <section class="frame admin" id="admin"><iframe src="admin.html" title="RecompTrack admin panel"></iframe></section>
+    <section id="app"><div class="phone"><iframe src="app.html" title="RecompTrack mobile app"></iframe></div><p class="caption">Mobile app (web preview of the iOS app)</p></section>
+  </div>
+</main>
+<script>
+  var tabs = { both: ["admin", "app"], admin: ["admin"], app: ["app"] };
+  function show(name) {
+    if (!tabs[name]) name = "both";
+    ["both", "admin", "app"].forEach(function (k) { document.getElementById("t-" + k).setAttribute("aria-selected", String(k === name)); });
+    ["admin", "app"].forEach(function (k) { document.getElementById(k).hidden = tabs[name].indexOf(k) < 0; });
+    document.getElementById("stage").style.gridTemplateColumns = name === "both" ? "" : "1fr";
+    if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name);
+  }
+  ["both", "admin", "app"].forEach(function (k) { document.getElementById("t-" + k).addEventListener("click", function () { show(k); }); });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  show(location.hash.slice(1));
+</script>
+</body>
+</html>
