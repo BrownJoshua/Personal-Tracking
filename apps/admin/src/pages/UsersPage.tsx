@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { USER_STATUSES, enumLabel, type AdminUserDetailDTO, type Paginated, type UserDTO } from "@recomptrack/shared";
 import { ConfirmDialog, EmptyState, EnumSelect, ErrorBanner, Modal, PageHeader, Pagination, StatusBadge, formatDate } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
+import { UserPlansPanel } from "../components/UserPlansPanel";
 import { useDebounced } from "../hooks/useDebounced";
 import { api } from "../services/api";
 
@@ -102,7 +103,7 @@ export function UsersPage() {
         {list.data && <Pagination page={page} totalPages={list.data.totalPages} total={list.data.total} onPage={setPage} />}
       </div>
 
-      <Modal title="User" open={!!focusId} onClose={() => setParams({})}>
+      <Modal title="Member" open={!!focusId} onClose={() => setParams({})} wide>
         <ErrorBanner error={detail.error} />
         {detail.data && (
           <div className="detail">
@@ -138,6 +139,7 @@ export function UsersPage() {
                 </button>
               </div>
             )}
+            {detail.data.user.role === "USER" && detail.data.user.status === "ACTIVE" && <UserPlansPanel user={detail.data.user} />}
           </div>
         )}
       </Modal>

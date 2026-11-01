@@ -59,6 +59,15 @@ export type MovementPattern = (typeof MOVEMENT_PATTERNS)[number];
 export const SET_TYPES = values(["WARM_UP", "WORKING", "DROP", "FAILURE"] as const);
 export type SetType = (typeof SET_TYPES)[number];
 
+export const SESSION_STATUSES = values(["IN_PROGRESS", "PAUSED", "COMPLETED", "DISCARDED"] as const);
+export type SessionStatus = (typeof SESSION_STATUSES)[number];
+
+export const ASSIGNMENT_STATUSES = values(["ACTIVE", "COMPLETED", "CANCELLED"] as const);
+export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
+
+export const WEEKDAYS = values(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const);
+export type Weekday = (typeof WEEKDAYS)[number];
+
 // ---- Foods --------------------------------------------------------------
 export const FOOD_KINDS = values(["GENERIC", "BRANDED"] as const);
 export type FoodKind = (typeof FOOD_KINDS)[number];
@@ -101,6 +110,9 @@ export type FoodSource = (typeof FOOD_SOURCES)[number];
 
 export const MEAL_TYPES = values(["BREAKFAST", "LUNCH", "DINNER", "SNACK"] as const);
 export type MealType = (typeof MEAL_TYPES)[number];
+
+export const TARGET_METHODS = values(["CALCULATED", "MANUAL"] as const);
+export type TargetMethod = (typeof TARGET_METHODS)[number];
 
 // ---- Measurements & activity --------------------------------------------
 export const DATA_SOURCES = values(["MANUAL", "APPLE_HEALTH", "STRAVA", "IMPORT"] as const);

@@ -29,3 +29,40 @@ export function scaleNutrition(nutrition: NutritionDTO, servingBasis: number, qu
 export function caloriesFromMacros(n: Pick<NutritionDTO, "protein" | "carbohydrates" | "fat">): number {
   return round1(n.protein * 4 + n.carbohydrates * 4 + n.fat * 9);
 }
+
+export const ZERO_NUTRITION: NutritionDTO = {
+  calories: 0,
+  protein: 0,
+  carbohydrates: 0,
+  fat: 0,
+  fibre: 0,
+  sugar: null,
+  saturatedFat: null,
+  sodiumMg: null,
+};
+
+/** Add up nutrition values. Optional nutrients stay null unless at least one item reports them. */
+export function sumNutrition(items: NutritionDTO[]): NutritionDTO {
+  const total: NutritionDTO = { ...ZERO_NUTRITION };
+  for (const n of items) {
+    total.calories += n.calories;
+    total.protein += n.protein;
+    total.carbohydrates += n.carbohydrates;
+    total.fat += n.fat;
+    total.fibre += n.fibre;
+    if (n.sugar !== null) total.sugar = (total.sugar ?? 0) + n.sugar;
+    if (n.saturatedFat !== null) total.saturatedFat = (total.saturatedFat ?? 0) + n.saturatedFat;
+    if (n.sodiumMg !== null) total.sodiumMg = (total.sodiumMg ?? 0) + n.sodiumMg;
+  }
+  const r = (v: number) => Math.round(v * 10) / 10;
+  return {
+    calories: r(total.calories),
+    protein: r(total.protein),
+    carbohydrates: r(total.carbohydrates),
+    fat: r(total.fat),
+    fibre: r(total.fibre),
+    sugar: total.sugar === null ? null : r(total.sugar),
+    saturatedFat: total.saturatedFat === null ? null : r(total.saturatedFat),
+    sodiumMg: total.sodiumMg === null ? null : r(total.sodiumMg),
+  };
+}

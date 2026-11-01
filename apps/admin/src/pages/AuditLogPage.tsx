@@ -4,7 +4,7 @@ import { enumLabel, type AuditLogDTO, type Paginated } from "@recomptrack/shared
 import { ErrorBanner, PageHeader, Pagination, formatDate } from "../components/ui";
 import { api } from "../services/api";
 
-const ENTITY_TYPES = ["EXERCISE", "FOOD", "USER", "MUSCLE_GROUP", "EQUIPMENT_TYPE"];
+const ENTITY_TYPES = ["EXERCISE", "FOOD", "USER", "WORKOUT_PLAN", "MEAL_TEMPLATE", "TARGET_SETTINGS", "MUSCLE_GROUP", "EQUIPMENT_TYPE"];
 
 export function AuditLogPage() {
   const [entityType, setEntityType] = useState("");

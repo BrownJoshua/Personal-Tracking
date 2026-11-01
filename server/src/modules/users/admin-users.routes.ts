@@ -20,6 +20,12 @@ import { UserGoal } from "./userGoal.model";
 import { UserPreference } from "./userPreference.model";
 import { UserProfile } from "./userProfile.model";
 import { toPreferencesDTO, toUserDTO } from "./users.serializers";
+import { manualTargetSchema, type AdminUserPlansDTO } from "@recomptrack/shared";
+import { idOf } from "../../utils/serialize";
+import { UserMealAssignment, MealTemplate } from "../nutrition/nutrition.models";
+import { currentTarget, recalculate, setManualTarget, toTargetDTO } from "../targets/targets.service";
+import { toAssignmentDTOs } from "../workouts/plans.service";
+import { UserWorkoutAssignment } from "../workouts/workout.models";
 
 export const adminUsersRouter = Router();
 adminUsersRouter.use(authorize(PERMISSIONS.USERS_MANAGE));
@@ -110,4 +116,58 @@ adminUsersRouter.patch("/:id", validate({ params: idParams, body: adminUpdateUse
     await recordAudit(req, { action, entityType: "USER", entityId: id, summary: `Updated ${user.email}`, changes });
   }
   res.json(toUserDTO(user));
+});
+
+/**
+ * Plans and targets for one user. The target breakdown (age, weight) is only included
+ * when the user has opted in to sharing progress with admins.
+ */
+async function userPlans(id: string): Promise<AdminUserPlansDTO> {
+  const [assignments, meals, target, prefs] = await Promise.all([
+    UserWorkoutAssignment.find({ userId: id }).sort({ createdAt: -1 }).limit(10).lean(),
+    UserMealAssignment.find({ userId: id, status: "ACTIVE" }).lean(),
+    currentTarget(id),
+    UserPreference.findOne({ userId: id }).select({ sharing: 1 }).lean(),
+  ]);
+  const templates = await MealTemplate.find({ _id: { $in: meals.map((m) => m.mealTemplateId) } }).select({ name: 1, mealType: 1 }).lean();
+  const tMap = new Map(templates.map((t) => [idOf(t._id), t]));
+  const dtos = await toAssignmentDTOs(assignments);
+  return {
+    workoutAssignment: dtos.find((a) => a.status === "ACTIVE") ?? null,
+    workoutHistory: dtos.filter((a) => a.status !== "ACTIVE"),
+    mealAssignments: meals.map((m) => ({
+      id: idOf(m._id),
+      mealTemplateId: idOf(m.mealTemplateId),
+      name: tMap.get(idOf(m.mealTemplateId))?.name ?? "Deleted template",
+      mealType: tMap.get(idOf(m.mealTemplateId))?.mealType ?? "SNACK",
+      startDate: m.startDate.toISOString(),
+      status: m.status,
+    })),
+    target: target ? toTargetDTO(target, { includeBreakdown: !!prefs?.sharing?.shareProgressWithAdmin }) : null,
+  };
+}
+
+adminUsersRouter.get("/:id/plans", validate({ params: idParams }), async (req, res) => {
+  if (!(await User.exists({ _id: req.valid.params.id }))) throw HttpError.notFound("User");
+  res.json(await userPlans(req.valid.params.id));
+});
+
+adminUsersRouter.put("/:id/targets", validate({ params: idParams, body: manualTargetSchema }), async (req, res) => {
+  if (!(await User.exists({ _id: req.valid.params.id }))) throw HttpError.notFound("User");
+  await setManualTarget(req, req.valid.params.id, req.valid.body);
+  res.json(await userPlans(req.valid.params.id));
+});
+
+/** Drop a manual override and go back to the calculated target. */
+adminUsersRouter.post("/:id/targets/recalculate", validate({ params: idParams }), async (req, res) => {
+  if (!(await User.exists({ _id: req.valid.params.id }))) throw HttpError.notFound("User");
+  const r = await recalculate(req.valid.params.id);
+  await recordAudit(req, {
+    action: "USER_TARGET_RECALCULATED",
+    entityType: "USER",
+    entityId: req.valid.params.id,
+    summary: r.target ? "Reset nutrition target to the calculated value" : "Target recalculation needs a complete profile",
+  });
+  if (!r.target) throw HttpError.conflict("The user's profile is incomplete, so targets cannot be calculated yet", "PROFILE_INCOMPLETE");
+  res.json(await userPlans(req.valid.params.id));
 });

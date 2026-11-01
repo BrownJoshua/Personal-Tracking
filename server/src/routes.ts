@@ -11,6 +11,11 @@ import { measurementsRouter } from "./modules/measurements/measurements.routes";
 import { adminFoodsRouter, foodsRouter } from "./modules/nutrition/foods.routes";
 import { adminUsersRouter } from "./modules/users/admin-users.routes";
 import { usersRouter } from "./modules/users/users.routes";
+import { adminMealAssignmentsRouter, adminMealTemplatesRouter } from "./modules/nutrition/admin-meals.routes";
+import { nutritionRouter } from "./modules/nutrition/diary.routes";
+import { adminTargetSettingsRouter } from "./modules/targets/targets.routes";
+import { adminAssignmentsRouter, adminPlansRouter } from "./modules/workouts/admin-plans.routes";
+import { workoutsRouter } from "./modules/workouts/workouts.routes";
 
 export const apiRouter = Router();
 
@@ -28,6 +33,8 @@ apiRouter.use("/exercises", authenticate, exercisesRouter);
 apiRouter.use("/lookups", authenticate, lookupsRouter);
 apiRouter.use("/foods", authenticate, foodsRouter);
 apiRouter.use("/measurements", authenticate, measurementsRouter);
+apiRouter.use("/workouts", authenticate, workoutsRouter);
+apiRouter.use("/nutrition", authenticate, nutritionRouter);
 
 // ---- Admin ----
 // Every /admin route needs authentication plus at least the dashboard permission;
@@ -38,5 +45,10 @@ admin.use("/users", adminUsersRouter);
 admin.use("/exercises", adminExercisesRouter);
 admin.use("/lookups", adminLookupsRouter);
 admin.use("/foods", adminFoodsRouter);
+admin.use("/workout-plans", adminPlansRouter);
+admin.use("/assignments", adminAssignmentsRouter);
+admin.use("/meal-templates", adminMealTemplatesRouter);
+admin.use("/meal-assignments", adminMealAssignmentsRouter);
+admin.use("/target-settings", adminTargetSettingsRouter);
 admin.use("/", adminRouter);
 apiRouter.use("/admin", admin);

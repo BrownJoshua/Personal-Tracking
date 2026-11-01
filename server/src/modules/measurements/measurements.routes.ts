@@ -13,6 +13,7 @@ import { validate } from "../../middleware/validate";
 import { HttpError } from "../../utils/httpError";
 import { paginate, paginated } from "../../utils/pagination";
 import { idOf } from "../../utils/serialize";
+import { refreshIfCalculated } from "../targets/targets.service";
 import { BodyMeasurement, type IBodyMeasurement } from "./bodyMeasurement.model";
 
 /**
@@ -50,6 +51,8 @@ measurementsRouter.post(
       source: "MANUAL",
       notes: body.notes ?? null,
     });
+    // A new weight changes calculated calorie targets (manual targets are left alone).
+    if (body.measurements.weightKg) await refreshIfCalculated(userId);
     res.status(201).json(toDTO(doc.toObject()));
   },
 );

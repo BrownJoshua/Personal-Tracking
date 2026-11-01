@@ -5,3 +5,5 @@ export * from "./users";
 export * from "./exercises";
 export * from "./foods";
 export * from "./measurements";
+export * from "./workouts";
+export * from "./nutrition";

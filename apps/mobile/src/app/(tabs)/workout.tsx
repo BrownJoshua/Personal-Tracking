@@ -1,62 +1,102 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "expo-router";
-import { useState } from "react";
-import { FlatList, Pressable, Text, TextInput, View } from "react-native";
-import { enumLabel, type ExerciseDTO, type LookupDTO, type Paginated } from "@recomptrack/shared";
-import { Card, EmptyNote, ErrorNote, styles } from "../../components/ui";
-import { useDebounced } from "../../hooks/useDebounced";
-import { api } from "../../services/api";
+import { Link, router } from "expo-router";
+import { Alert, Pressable, Text, View } from "react-native";
+import { WEEKDAY_NAMES, formatDuration } from "@recomptrack/shared";
+import { Button, Card, EmptyNote, ErrorNote, Row, Screen, styles } from "../../components/ui";
+import { useHistory, useStartSession, useToday } from "../../hooks/useWorkouts";
+import { ApiError } from "../../services/api";
 import { colors, space } from "../../theme";
 
-export default function WorkoutScreen() {
-  const [search, setSearch] = useState("");
-  const [muscleId, setMuscleId] = useState<string | null>(null);
-  const q = useDebounced(search);
+const REASON_TEXT: Record<string, string> = {
+  NO_PLAN: "No plan assigned yet. You can still log a free workout.",
+  NOT_STARTED: "Your plan starts soon.",
+  REST_DAY: "Rest day — recovery is part of the plan.",
+  DONE_TODAY: "Done for today. Nice work!",
+};
 
-  const muscles = useQuery({ queryKey: ["muscle-groups"], queryFn: () => api<LookupDTO[]>("/lookups/muscle-groups") });
-  const list = useQuery({
-    queryKey: ["exercises", q, muscleId],
-    queryFn: () => api<Paginated<ExerciseDTO>>("/exercises", { query: { q, muscleId, limit: 100 } }),
-  });
+export default function WorkoutScreen() {
+  const today = useToday();
+  const history = useHistory(3);
+  const start = useStartSession();
+  const t = today.data;
+
+  function begin(dayId?: string) {
+    start.mutate(dayId, {
+      onSuccess: () => router.push("/workout/active"),
+      onError: (e) => {
+        if (e instanceof ApiError && e.code === "SESSION_IN_PROGRESS") router.push("/workout/active");
+        else Alert.alert("Could not start workout", e.message);
+      },
+    });
+  }
 
   return (
-    <FlatList
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: space.lg, gap: space.sm }}
-      keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={
-        <View style={{ gap: space.md, marginBottom: space.sm }}>
-          <Card title="Today's workout">
-            <EmptyNote>No plan assigned yet. Workout plans and the live workout logger arrive in the next release.</EmptyNote>
-          </Card>
-          <Text style={[styles.cardTitle, { marginTop: space.sm }]}>Exercise library</Text>
-          <TextInput placeholder="Search exercises" placeholderTextColor={colors.muted} value={search} onChangeText={setSearch} style={styles.input} accessibilityLabel="Search exercises" />
-          <View style={styles.pills}>
-            <Pressable onPress={() => setMuscleId(null)} style={[styles.pill, !muscleId && styles.pillOn]}>
-              <Text style={[styles.pillText, !muscleId && styles.pillTextOn]}>All</Text>
-            </Pressable>
-            {muscles.data?.map((m) => (
-              <Pressable key={m.id} onPress={() => setMuscleId(m.id === muscleId ? null : m.id)} style={[styles.pill, m.id === muscleId && styles.pillOn]}>
-                <Text style={[styles.pillText, m.id === muscleId && styles.pillTextOn]}>{m.name}</Text>
-              </Pressable>
+    <Screen>
+      <ErrorNote error={today.error} />
+      {t?.activeSessionId && (
+        <Card title="In progress">
+          <Text style={styles.listTitle}>You have an unfinished workout.</Text>
+          <Button title="Resume workout" onPress={() => router.push("/workout/active")} />
+        </Card>
+      )}
+
+      <Card title="Today" right={t?.day?.weekday ? <Text style={styles.muted}>{WEEKDAY_NAMES[t.day.weekday - 1]}</Text> : undefined}>
+        {t?.day && t.reason !== "DONE_TODAY" ? (
+          <>
+            <Text style={styles.h2}>{t.day.dayName}</Text>
+            {t.day.exercises.map((e) => (
+              <Row key={e.exerciseId} style={{ justifyContent: "space-between" }}>
+                <Text style={[styles.text, { flex: 1 }]}>{e.exerciseName}</Text>
+                <Text style={styles.muted}>{e.sets} × {e.repMin}–{e.repMax}</Text>
+              </Row>
             ))}
-          </View>
-          <ErrorNote error={list.error} />
-        </View>
-      }
-      data={list.data?.items ?? []}
-      keyExtractor={(e) => e.id}
-      renderItem={({ item }) => (
-        <Link href={{ pathname: "/exercise/[id]", params: { id: item.id } }} asChild>
-          <Pressable style={[styles.card, { paddingVertical: space.md }]}>
-            <Text style={styles.listTitle}>{item.name}</Text>
-            <Text style={styles.muted}>
-              {[item.primaryMuscle?.name, item.equipment?.name, enumLabel(item.exerciseType)].filter(Boolean).join(" · ")}
-            </Text>
+            {!t.activeSessionId && <Button title="Start workout" onPress={() => begin(t.day!.id)} loading={start.isPending} />}
+          </>
+        ) : (
+          <>
+            {t?.reason === "DONE_TODAY" && t.day && <Text style={styles.h2}>{t.day.dayName} ✓</Text>}
+            <EmptyNote>
+              {t ? (t.reason === "NOT_STARTED" ? `Your plan starts on ${t.startsOn}.` : REASON_TEXT[t.reason]) : "Loading…"}
+            </EmptyNote>
+          </>
+        )}
+        {!t?.activeSessionId && <Button title="Log a free workout" variant="secondary" onPress={() => begin()} loading={start.isPending && !t?.day} />}
+      </Card>
+
+      <Row style={{ gap: space.md }}>
+        <Link href="/workout/plan" asChild>
+          <Pressable style={{ flex: 1 }}>
+            <Card title="My plan"><Text style={styles.text}>Days, sets and reps →</Text></Card>
           </Pressable>
         </Link>
-      )}
-      ListEmptyComponent={list.isLoading ? undefined : <EmptyNote>No exercises found.</EmptyNote>}
-    />
+        <Link href="/exercises" asChild>
+          <Pressable style={{ flex: 1 }}>
+            <Card title="Library"><Text style={styles.text}>All exercises →</Text></Card>
+          </Pressable>
+        </Link>
+      </Row>
+
+      <Card title="Recent workouts" right={<Link href="/workout/history" style={{ color: colors.primary }}>See all</Link>}>
+        {history.data?.items.length ? (
+          history.data.items.map((s) => (
+            <Link key={s.id} href={{ pathname: "/workout/[id]", params: { id: s.id } }} asChild>
+              <Pressable style={styles.listItem}>
+                <Row style={{ justifyContent: "space-between" }}>
+                  <Text style={styles.listTitle}>{s.title}</Text>
+                  <Text style={styles.muted}>{new Date(s.completedAt ?? s.startedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</Text>
+                </Row>
+                {s.summary && (
+                  <Text style={styles.muted}>
+                    {formatDuration(s.summary.durationSeconds)} · {s.summary.workingSets} sets · {Math.round(s.summary.volumeKg)} kg
+                    {s.summary.personalRecords.length ? ` · ${s.summary.personalRecords.length} PR` : ""}
+                  </Text>
+                )}
+              </Pressable>
+            </Link>
+          ))
+        ) : (
+          <EmptyNote>No completed workouts yet.</EmptyNote>
+        )}
+      </Card>
+    </Screen>
   );
 }

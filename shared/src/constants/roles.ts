@@ -37,6 +37,9 @@ export const PERMISSIONS = {
   EXERCISES_MANAGE: "admin:exercises:manage",
   FOODS_MANAGE: "admin:foods:manage",
   LOOKUPS_MANAGE: "admin:lookups:manage",
+  WORKOUT_PLANS_MANAGE: "admin:workout-plans:manage",
+  MEAL_PLANS_MANAGE: "admin:meal-plans:manage",
+  TARGETS_MANAGE: "admin:targets:manage",
   AUDIT_READ: "admin:audit:read",
 
   // Future trainer capability: read records of *assigned* users who consented.
@@ -63,6 +66,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     PERMISSIONS.EXERCISES_MANAGE,
     PERMISSIONS.FOODS_MANAGE,
     PERMISSIONS.LOOKUPS_MANAGE,
+    PERMISSIONS.WORKOUT_PLANS_MANAGE,
+    PERMISSIONS.MEAL_PLANS_MANAGE,
+    PERMISSIONS.TARGETS_MANAGE,
     PERMISSIONS.AUDIT_READ,
   ],
 };

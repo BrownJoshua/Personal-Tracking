@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import type { ApiErrorBody, AuthResponse } from "@recomptrack/shared";
 
 const BASE = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000").replace(/\/$/, "") + "/api";
@@ -23,6 +24,9 @@ export class ApiError extends Error {
  * The user id is never sent by the app — the server derives it from the token.
  */
 let accessToken: string | null = null;
+/** Web preview only: SecureStore isn't available in browsers, and localStorage is not safe for tokens. */
+let webRefreshToken: string | null = null;
+const isWeb = Platform.OS === "web";
 let refreshing: Promise<AuthResponse | null> | null = null;
 let onSessionLost: () => void = () => {};
 
@@ -32,16 +36,19 @@ export const setSessionLostHandler = (fn: () => void) => {
 
 export async function storeSession(res: AuthResponse) {
   accessToken = res.accessToken;
-  if (res.refreshToken) await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
+  if (!res.refreshToken) return;
+  if (isWeb) webRefreshToken = res.refreshToken;
+  else await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
 }
 
 export async function clearSession() {
   accessToken = null;
-  await SecureStore.deleteItemAsync(REFRESH_KEY);
+  if (isWeb) webRefreshToken = null;
+  else await SecureStore.deleteItemAsync(REFRESH_KEY);
 }
 
-export function getStoredRefreshToken() {
-  return SecureStore.getItemAsync(REFRESH_KEY);
+export async function getStoredRefreshToken() {
+  return isWeb ? webRefreshToken : SecureStore.getItemAsync(REFRESH_KEY);
 }
 
 async function parse(res: Response) {

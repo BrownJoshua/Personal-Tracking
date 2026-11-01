@@ -3,7 +3,7 @@
 Separate collections per concern; no large all-in-one user document. MongoDB references are
 *logical* — the backend validates references, ownership and delete rules itself.
 
-Legend: ✅ model + API in Phase 1 · 🧱 model defined in Phase 1, API later · 📐 designed, model added in its phase.
+Legend: ✅ model + API built · 📐 designed, model added in its phase.
 
 ## Users & auth
 
@@ -32,11 +32,11 @@ Exercise categorisation uses `exerciseType` + `movementPattern` enums plus the t
 
 | Collection | Status | Key fields |
 |---|---|---|
-| `workoutPlans` | 🧱 | **planKey** (stable across versions), **version**, name, description, goalType, experienceLevel, durationWeeks, daysPerWeek, warmUpInstructions, status `DRAFT\|PUBLISHED\|ARCHIVED`, publishedAt — unique {planKey, version} |
-| `workoutPlanDays` | 🧱 | workoutPlanId (one version), dayNumber, weekday, dayName, exercises[{exerciseId, exerciseNameSnapshot, order, sets, repMin, repMax, restSeconds, notes}] |
-| `userWorkoutAssignments` | 🧱 | userId, workoutPlanId, **planVersion**, startDate, endDate, status, assignedBy |
-| `workoutSessions` | 🧱 | userId, assignmentId, workoutPlanId, workoutPlanDayId, startedAt, completedAt, pausedSeconds, durationSeconds, status `IN_PROGRESS\|PAUSED\|COMPLETED\|DISCARDED`, notes |
-| `exerciseLogs` | 🧱 | workoutSessionId, userId, exerciseId, **exerciseNameSnapshot**, order, sets[{setNumber, weightKg, reps, setType `WARM_UP\|WORKING\|DROP\|FAILURE`, completed, rpe}], notes, discomfort{reported, location, severity, notes} — index {userId, exerciseId, createdAt} for strength progression |
+| `workoutPlans` | ✅ | **planKey** (stable across versions), **version**, **isLatest**, name, description, goalType, experienceLevel, durationWeeks, daysPerWeek, warmUpInstructions, status `DRAFT\|PUBLISHED\|ARCHIVED`, publishedAt — unique {planKey, version} |
+| `workoutPlanDays` | ✅ | workoutPlanId (one version), dayNumber, weekday, dayName, exercises[{exerciseId, exerciseNameSnapshot, order, sets, repMin, repMax, restSeconds, notes}] |
+| `userWorkoutAssignments` | ✅ | userId, workoutPlanId, **planVersion**, startDate, endDate, status, assignedBy |
+| `workoutSessions` | ✅ | userId, assignmentId, workoutPlanId, workoutPlanDayId, title, startedAt, completedAt, pausedAt, pausedSeconds, durationSeconds, **summary** {duration, volume, sets, reps, personalRecords}, status `IN_PROGRESS\|PAUSED\|COMPLETED\|DISCARDED`, notes |
+| `exerciseLogs` | ✅ | workoutSessionId, userId, exerciseId, **exerciseNameSnapshot**, order, **planned** {sets, repMin, repMax, restSeconds}, sets[{setNumber, weightKg, reps, setType `WARM_UP\|WORKING\|DROP\|FAILURE`, completed, rpe}], notes, discomfort{reported, location, severity, notes} — index {userId, exerciseId, createdAt} for strength progression |
 
 **Versioning rule**: editing a published plan creates a new `workoutPlans` document with the same `planKey` and `version + 1`. Assignments point at one exact version. Sessions and logs store snapshots, so nothing historical changes.
 
@@ -45,10 +45,11 @@ Exercise categorisation uses `exerciseType` + `movementPattern` enums plus the t
 | Collection | Status | Key fields |
 |---|---|---|
 | `foods` | ✅ | name, kind `GENERIC\|BRANDED`, brand, barcode (unique if present), category, **preparation `RAW\|COOKED\|AS_PACKAGED`**, servingBasis (e.g. 100), servingUnit `GRAM\|MILLILITRE`, servingSizes[{label, quantity}], nutrition{calories, protein, carbohydrates, fat, fibre, sugar, saturatedFat, sodiumMg}, source, sourceReference, **dedupeKey** (name\|brand\|preparation, unique), status |
-| `mealTemplates` | 🧱 | name, mealType, ingredients[{foodId, foodNameSnapshot, quantity}], **totalNutrition** (derived), tags, status |
-| `userMealAssignments` | 🧱 | userId, mealTemplateId, startDate, endDate, status, assignedBy |
-| `customFoods` | 🧱 | userId (private to the user), name, brand, servingBasis, servingUnit, nutrition |
-| `foodLogs` | 🧱 | userId, foodId \| customFoodId, mealTemplateId, **localDate**, loggedAt, mealType, quantity, **foodSnapshot**, **nutritionSnapshot** (for the eaten quantity) |
+| `mealTemplates` | ✅ | name, mealType, ingredients[{foodId, foodNameSnapshot, quantity}], **totalNutrition** (derived), tags, status |
+| `userMealAssignments` | ✅ | userId, mealTemplateId, startDate, endDate, status, assignedBy |
+| `customFoods` | ✅ | userId (private to the user), name, brand, servingBasis, servingUnit, nutrition |
+| `savedMeals` | ✅ | userId, name, items[{foodId \| customFoodId, quantity}] |
+| `foodLogs` | ✅ | userId, foodId \| customFoodId, mealTemplateId, **localDate**, loggedAt, mealType, quantity, **foodSnapshot**, **basisNutritionSnapshot** (per serving basis), **nutritionSnapshot** (for the eaten quantity) |
 
 Food logs freeze the nutrition at logging time: correcting a food later never changes past intake.
 
@@ -73,8 +74,8 @@ Food logs freeze the nutrition at logging time: correcting a food later never ch
 | Collection | Status | Purpose |
 |---|---|---|
 | `auditLogs` | ✅ | actorId, action, entityType, entityId, summary, changes{field:{from,to}}, ip, createdAt. Append-only. Also records admin *views* of user accounts. |
-| `nutritionTargets` | 📐 | Per-user daily calorie/macro targets with effectiveFrom, method, inputs snapshot, and who set it |
-| `goalConfigurations` | 📐 | Admin defaults: equation (Mifflin-St Jeor), activity multipliers, protein g/kg range, fat minimum, fibre target, review interval |
+| `nutritionTargets` | ✅ | Per-user daily calorie/macro targets with effectiveFrom, method, inputs snapshot, and who set it |
+| `goalConfigurations` | ✅ | Admin defaults: equation (Mifflin-St Jeor), activity multipliers, protein g/kg range, fat minimum, fibre target, review interval |
 | `notifications` | 📐 | userId, type, payload, scheduledFor, readAt |
 | `appSettings` | 📐 | Global key/value configuration |
 
@@ -115,3 +116,13 @@ erDiagram
 | Muscle group / equipment | Cannot be archived while an active exercise uses it. Never hard-deleted. |
 | User | Deactivate, never delete from the admin panel (a GDPR-style erasure flow is a separate, audited process). |
 | Body measurement | The owner may delete their own entries. |
+
+## Phase 2–3 indexes worth knowing
+
+| Collection | Index | Why |
+|---|---|---|
+| `workoutPlans` | unique `{planKey}` where `status = DRAFT` | One draft per plan at a time |
+| `workoutSessions` | unique `{userId}` where `status ∈ {IN_PROGRESS, PAUSED}` | One open workout per user (also enforced under concurrent requests) |
+| `exerciseLogs` | `{userId, exerciseId, createdAt}` | Previous performance and personal records |
+| `foodLogs` | `{userId, localDate}` | Diary day and history aggregation |
+| `nutritionTargets` | `{userId, effectiveFrom}` | Current target lookup; history is append-only |

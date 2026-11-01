@@ -3,6 +3,7 @@ import { ROLE_PERMISSIONS } from "@recomptrack/shared";
 import { HttpError } from "../../utils/httpError";
 import { toObjectId } from "../../utils/serialize";
 import { BodyMeasurement } from "../measurements/bodyMeasurement.model";
+import { refreshIfCalculated } from "../targets/targets.service";
 import { User } from "./user.model";
 import { UserGoal } from "./userGoal.model";
 import { UserPreference } from "./userPreference.model";
@@ -35,6 +36,7 @@ export async function updateMe(userId: string, input: { name?: string }) {
 
 export async function updateProfile(userId: string, input: ProfileInput) {
   await UserProfile.updateOne({ userId }, { $set: input }, { upsert: true });
+  await refreshIfCalculated(userId);
   return getMe(userId);
 }
 
@@ -57,6 +59,7 @@ async function setGoal(userId: string, input: GoalInput) {
 
 export async function updateGoal(userId: string, input: GoalInput) {
   await setGoal(userId, input);
+  await refreshIfCalculated(userId);
   return getMe(userId);
 }
 
@@ -91,5 +94,6 @@ export async function submitAssessment(userId: string, input: AssessmentInput) {
   if (input.goal) await setGoal(userId, input.goal);
 
   await User.updateOne({ _id: userId }, { $set: { onboardingCompleted: true } });
+  await refreshIfCalculated(userId);
   return getMe(userId);
 }

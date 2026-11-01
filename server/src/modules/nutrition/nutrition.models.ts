@@ -116,6 +116,8 @@ export interface IFoodLog {
   loggedAt: Date;
   mealType: MealType;
   quantity: number;
+  /** Nutrition per servingBasis at logging time — lets the user change quantity without re-reading the (possibly corrected) food. */
+  basisNutritionSnapshot: INutrition;
   /** Frozen copy so later corrections to the food master never change history. */
   foodSnapshot: { name: string; brand: string | null; preparation: string | null; servingBasis: number; servingUnit: string };
   nutritionSnapshot: INutrition; // for the eaten quantity
@@ -139,11 +141,41 @@ const foodLogSchema = new Schema<IFoodLog>(
       servingBasis: { type: Number, required: true },
       servingUnit: { type: String, required: true },
     },
+    basisNutritionSnapshot: { type: nutritionSchema, required: true },
     nutritionSnapshot: { type: nutritionSchema, required: true },
   },
   { timestamps: true },
 );
 foodLogSchema.index({ userId: 1, localDate: -1 });
 foodLogSchema.index({ foodId: 1 });
+foodLogSchema.index({ customFoodId: 1 });
 foodLogSchema.index({ createdAt: -1 });
 export const FoodLog = model<IFoodLog>("FoodLog", foodLogSchema, "foodLogs");
+
+// ---- savedMeals (user's own reusable meals) ------------------------------
+export interface ISavedMeal {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  name: string;
+  items: { foodId: Types.ObjectId | null; customFoodId: Types.ObjectId | null; quantity: number }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+const savedMealSchema = new Schema<ISavedMeal>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    name: { type: String, required: true, trim: true, maxlength: 80 },
+    items: [
+      {
+        _id: false,
+        foodId: { type: Schema.Types.ObjectId, ref: "Food", default: null },
+        customFoodId: { type: Schema.Types.ObjectId, ref: "CustomFood", default: null },
+        quantity: { type: Number, required: true, min: 0 },
+      },
+    ],
+  },
+  { timestamps: true },
+);
+savedMealSchema.index({ userId: 1, name: 1 });
+savedMealSchema.index({ "items.foodId": 1 });
+export const SavedMeal = model<ISavedMeal>("SavedMeal", savedMealSchema, "savedMeals");

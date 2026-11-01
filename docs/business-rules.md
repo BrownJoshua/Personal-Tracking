@@ -16,7 +16,13 @@
 | Branded vs generic | Branded foods require a brand; generic foods must not have one. | `createFoodSchema`, re-checked on partial update |
 | Body measurements | Every entry is a new record; profile updates never overwrite history. Future-dated entries are rejected. | `measurements.routes.ts`, `submitAssessment` |
 | Goals | Changing goal ends the current one and starts a new one (one active goal per user). | `users.service.ts#setGoal`, partial unique index |
-| Plan updates | Publishing a change creates a new plan version; assignments record the version. | Data model (Phase 2 API) |
+| Plan updates | Published versions are read-only. Editing creates the next version as a draft; publishing it archives the previous version for *new* assignments only. Members keep their assigned version until reassigned. | `plans.service.ts` |
+| Plan assignment | Only published plans can be assigned; a new assignment ends the previous one and keeps it as history. | `assignPlan` |
+| Workout logging | One open workout per user. Plan days can only be started by the user they are assigned to. Completed workouts are read-only; PRs compare against the user's own earlier logs (the first time is a baseline, not a record). | `sessions.service.ts` |
+| Diary quantity edits | Recomputed from the nutrition captured when the food was logged, so later food corrections never leak into history. | `diary.service.ts#updateLog` |
+| Custom foods | Private to their owner; deleting one keeps past diary entries. | `diary.service.ts` |
+| Meal templates | Totals are always derived from ingredients. Only published templates can be assigned; archiving ends assignments. | `mealTemplates.service.ts` |
+| Targets | Calculated from the member's own profile and latest weight (Mifflin-St Jeor × activity, goal adjustment, protein g/kg, fat floor, fibre per 1000 kcal, minimum calories). Recalculated automatically when profile, goal or weight change — unless an admin set an individual target, which stays until reset. | `targets.service.ts`, `shared/src/utils/targets.ts` |
 | Activity imports | Provider + external id are unique, so duplicate rides are ignored. | Data model (Phase 5) |
 | Calories | Exercise calories are never added automatically to the food budget; the dashboard shows recorded data only. | Product rule (Phase 4 engine) |
 | Admin privacy | Admins see account basics only. Measurements, food logs and photos require the user's `sharing` opt-in (off by default). Admin views of a user are audited. | `admin-users.routes.ts`, `userPreferences.sharing` |

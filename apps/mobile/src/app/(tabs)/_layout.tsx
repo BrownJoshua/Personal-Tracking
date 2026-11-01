@@ -1,7 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router/tabs";
 import type { ComponentProps } from "react";
-import type { ColorValue } from "react-native";
+import { StyleSheet, type ColorValue } from "react-native";
 import { colors } from "../../theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -11,7 +12,18 @@ const icon =
 
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: colors.primary, headerStyle: { backgroundColor: colors.bg }, headerShadowVisible: false }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: "rgba(13,27,46,0.6)", borderTopColor: colors.border },
+        tabBarBackground: () => <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />,
+        headerStyle: { backgroundColor: colors.headerBg },
+        headerTitleStyle: { color: colors.text },
+        headerShadowVisible: false,
+        sceneStyle: { backgroundColor: colors.bgTop },
+      }}
+    >
       <Tabs.Screen name="index" options={{ title: "Dashboard", tabBarIcon: icon("today-outline") }} />
       <Tabs.Screen name="workout" options={{ title: "Workout", tabBarIcon: icon("barbell-outline") }} />
       <Tabs.Screen name="nutrition" options={{ title: "Nutrition", tabBarIcon: icon("nutrition-outline") }} />

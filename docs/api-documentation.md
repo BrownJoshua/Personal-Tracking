@@ -86,3 +86,67 @@ Auth endpoints are rate-limited (20 per 15 min per IP).
 | GET | `/admin/audit-logs` | `?entityType&entityId&actorId&page&limit` |
 
 Request/response types: `shared/src/types/index.ts`. Validation schemas: `shared/src/validation/`.
+
+---
+
+# Phase 2 — Admin plans, meals and targets 🔒 ADMIN
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/admin/workout-plans` | `?q&status&latestOnly=true\|false&page&limit` |
+| GET | `/admin/workout-plans/:id` | Plan + days + exercises + all versions + active assignment count |
+| POST | `/admin/workout-plans` | `savePlanSchema` → new **DRAFT v1** |
+| PUT | `/admin/workout-plans/:id` | Replace a **draft** (409 `PLAN_NOT_EDITABLE` for published/archived) |
+| POST | `/admin/workout-plans/:id/publish` | Draft → PUBLISHED; earlier published versions of the same plan → ARCHIVED |
+| POST | `/admin/workout-plans/:id/revise` | Start the next version as a draft (one draft per plan) |
+| POST | `/admin/workout-plans/:id/duplicate` | Copy as a new plan (v1 draft) |
+| POST | `/admin/workout-plans/:id/archive` | No new assignments; current members keep it |
+| DELETE | `/admin/workout-plans/:id` | Drafts only |
+| GET | `/admin/assignments` | `?userId&workoutPlanId&status` |
+| POST | `/admin/assignments` | `{ userId, workoutPlanId, startDate }` — published plans only; ends the member's previous assignment |
+| POST | `/admin/assignments/:id/end` | |
+| GET/POST | `/admin/meal-templates` | Totals are always computed from ingredients |
+| GET/PUT/DELETE | `/admin/meal-templates/:id` | Delete only if never assigned or logged |
+| POST | `/admin/meal-templates/:id/publish` · `/unpublish` · `/archive` · `/restore` | Archiving ends active assignments |
+| POST | `/admin/meal-assignments` | `{ userId, mealTemplateId, startDate }` |
+| POST | `/admin/meal-assignments/:id/end` | |
+| GET/PUT | `/admin/target-settings` | Calculation defaults (`targetSettingsSchema`) |
+| GET | `/admin/users/:id/plans` | Workout assignment + history, meal assignments, current target (breakdown only with the member's consent) |
+| PUT | `/admin/users/:id/targets` | Individual (MANUAL) target |
+| POST | `/admin/users/:id/targets/recalculate` | Drop the override, back to CALCULATED |
+
+# Phase 3 — Member logging 🔒 own records only
+
+### Workouts — `/workouts`
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/workouts/plan` | Current assignment + the exact plan version, or `null` |
+| GET | `/workouts/today` | `{ day, reason: NO_PLAN \| NOT_STARTED \| SCHEDULED \| ROTATION \| REST_DAY \| DONE_TODAY, activeSessionId }` |
+| GET | `/workouts/sessions` | Completed history `?page&limit&exerciseId` |
+| GET | `/workouts/sessions/active` | The open session or `null` |
+| POST | `/workouts/sessions` | `{ workoutPlanDayId? }` — the day must belong to *your* active plan; sets pre-filled with last used weight. 409 `SESSION_IN_PROGRESS` if one is open |
+| GET | `/workouts/sessions/:id` | Session + exercise logs + previous performance |
+| PATCH | `/workouts/sessions/:id` | `{ notes }` |
+| POST | `/workouts/sessions/:id/pause` · `/resume` · `/complete` · `/discard` | Complete computes duration (excluding pauses), volume and personal records; completed sessions are read-only |
+| POST | `/workouts/sessions/:id/exercises` | `{ exerciseId }` add an exercise |
+| PUT | `/workouts/sessions/:id/exercises/:logId` | `{ sets[], notes, discomfort }` |
+| DELETE | `/workouts/sessions/:id/exercises/:logId` | |
+
+### Nutrition — `/nutrition`
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/nutrition/diary` | `?date=YYYY-MM-DD` (default: today in your time zone) → meals, totals, target |
+| GET | `/nutrition/history` | `?from&to` (≤ 93 days) daily totals; unlogged days are reported as empty |
+| GET | `/nutrition/recent-foods` | Quick re-add |
+| POST | `/nutrition/logs` | `{ foodId \| customFoodId, quantity, mealType, localDate? }` → nutrition snapshot |
+| PATCH/DELETE | `/nutrition/logs/:id` | Quantity changes recompute from the snapshot, not the current food |
+| GET/POST | `/nutrition/custom-foods` · PUT/DELETE `/:id` | Private to you |
+| GET/POST | `/nutrition/saved-meals` · DELETE `/:id` | |
+| POST | `/nutrition/saved-meals/from-diary` | `{ name, localDate, mealType }` |
+| POST | `/nutrition/saved-meals/:id/log` | `{ mealType, localDate?, portion? }` |
+| GET | `/nutrition/meal-plans` | Your assigned meal templates |
+| POST | `/nutrition/meal-plans/:assignmentId/log` | Logs each ingredient |
+| GET | `/nutrition/targets` | `{ target, missing[], reviewDue }` |
+| POST | `/nutrition/targets/recalculate` | |

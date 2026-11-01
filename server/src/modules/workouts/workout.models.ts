@@ -26,6 +26,7 @@ export interface IWorkoutPlan {
   _id: Types.ObjectId;
   planKey: string; // stable identity shared by all versions of the same plan
   version: number;
+  isLatest: boolean; // true on the newest version of a planKey (draft or published)
   name: string;
   description: string | null;
   goalType: GoalType;
@@ -43,6 +44,7 @@ const workoutPlanSchema = new Schema<IWorkoutPlan>(
   {
     planKey: { type: String, required: true },
     version: { type: Number, required: true, min: 1 },
+    isLatest: { type: Boolean, default: true },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     description: { type: String, default: null },
     goalType: { type: String, enum: GOAL_TYPES, required: true },
@@ -58,6 +60,9 @@ const workoutPlanSchema = new Schema<IWorkoutPlan>(
 );
 workoutPlanSchema.index({ planKey: 1, version: 1 }, { unique: true });
 workoutPlanSchema.index({ status: 1 });
+workoutPlanSchema.index({ isLatest: 1, updatedAt: -1 });
+// At most one draft per plan at a time.
+workoutPlanSchema.index({ planKey: 1 }, { unique: true, partialFilterExpression: { status: "DRAFT" }, name: "one_draft_per_plan" });
 export const WorkoutPlan = model<IWorkoutPlan>("WorkoutPlan", workoutPlanSchema, "workoutPlans");
 
 // ---- workoutPlanDays ----------------------------------------------------
@@ -143,12 +148,23 @@ export interface IWorkoutSession {
   assignmentId: Types.ObjectId | null;
   workoutPlanId: Types.ObjectId | null;
   workoutPlanDayId: Types.ObjectId | null;
+  title: string;
   startedAt: Date;
   completedAt: Date | null;
+  pausedAt: Date | null;
   pausedSeconds: number;
   durationSeconds: number | null;
   status: "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "DISCARDED";
   notes: string | null;
+  /** Calculated when the session is completed. */
+  summary: {
+    durationSeconds: number;
+    exercises: number;
+    workingSets: number;
+    reps: number;
+    volumeKg: number;
+    personalRecords: { exerciseId: Types.ObjectId; exerciseName: string; kind: "ESTIMATED_1RM" | "HEAVIEST_WEIGHT"; value: number; previous: number | null }[];
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -158,16 +174,25 @@ const workoutSessionSchema = new Schema<IWorkoutSession>(
     assignmentId: { type: Schema.Types.ObjectId, ref: "UserWorkoutAssignment", default: null },
     workoutPlanId: { type: Schema.Types.ObjectId, ref: "WorkoutPlan", default: null },
     workoutPlanDayId: { type: Schema.Types.ObjectId, ref: "WorkoutPlanDay", default: null },
+    title: { type: String, default: "Workout" },
     startedAt: { type: Date, required: true },
     completedAt: { type: Date, default: null },
+    pausedAt: { type: Date, default: null },
     pausedSeconds: { type: Number, default: 0 },
     durationSeconds: { type: Number, default: null },
     status: { type: String, enum: ["IN_PROGRESS", "PAUSED", "COMPLETED", "DISCARDED"], default: "IN_PROGRESS" },
     notes: { type: String, default: null },
+    summary: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true },
 );
 workoutSessionSchema.index({ userId: 1, startedAt: -1 });
+workoutSessionSchema.index({ userId: 1, assignmentId: 1, status: 1, completedAt: -1 });
+// One unfinished session per user at a time.
+workoutSessionSchema.index(
+  { userId: 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ["IN_PROGRESS", "PAUSED"] } }, name: "one_open_session" },
+);
 workoutSessionSchema.index({ status: 1, startedAt: -1 });
 export const WorkoutSession = model<IWorkoutSession>("WorkoutSession", workoutSessionSchema, "workoutSessions");
 
@@ -187,6 +212,8 @@ export interface IExerciseLog {
   exerciseId: Types.ObjectId;
   exerciseNameSnapshot: string;
   order: number;
+  /** Copied from the plan day when the session starts; the plan can change later without affecting this. */
+  planned: { sets: number; repMin: number; repMax: number; restSeconds: number } | null;
   sets: ILoggedSet[];
   notes: string | null;
   discomfort: { reported: boolean; location: string | null; severity: number | null; notes: string | null };
@@ -211,6 +238,13 @@ const exerciseLogSchema = new Schema<IExerciseLog>(
     exerciseId: { type: Schema.Types.ObjectId, ref: "Exercise", required: true },
     exerciseNameSnapshot: { type: String, required: true },
     order: { type: Number, default: 1 },
+    planned: {
+      type: new Schema(
+        { sets: Number, repMin: Number, repMax: Number, restSeconds: Number },
+        { _id: false },
+      ),
+      default: null,
+    },
     sets: [loggedSetSchema],
     notes: { type: String, default: null },
     discomfort: {

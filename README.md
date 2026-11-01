@@ -10,7 +10,22 @@ shared        Types, enums, permissions, zod validation, calculations (used by a
 docs          Architecture, database schema, API reference, business rules
 ```
 
-**Status: Phase 1 — Foundation.** See [what's included](#phase-1-scope) and the [roadmap](#roadmap).
+**Status: Phases 1–3 built** (foundation, admin plans/meals/targets, member logging). See the [roadmap](#roadmap).
+
+## Design
+
+Both the admin panel and the mobile app use a **glassmorphism** theme: frosted translucent panels (CSS `backdrop-filter` on web, `expo-blur` on iOS) over a dark teal/indigo gradient, with light text for contrast.
+
+## Connecting MongoDB Atlas
+
+1. In Atlas: **Database → Connect → Drivers** and copy the `mongodb+srv://…` connection string.
+2. **Network Access**: allow the IP of the machine running the API (your computer, or your host's outbound IPs).
+3. **Database Access**: create a database user with *readWrite* on the `recomptrack` database (not an Atlas admin).
+4. Put it in `server/.env` (never commit it):
+   `MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/recomptrack?retryWrites=true&w=majority`
+5. `npm run seed` then `npm run dev:server`. The API creates its indexes on start.
+
+For CI you can point `MONGO_TEST_URI` at a *separate* Atlas test database; integration tests wipe the database they use.
 
 ## Quick start
 
@@ -30,7 +45,7 @@ npm run dev:admin                         # http://localhost:5173  (sign in with
 
 # 3. Mobile app
 cp apps/mobile/.env.example apps/mobile/.env   # set EXPO_PUBLIC_API_URL (LAN IP for a real phone)
-npm run dev:mobile                        # press i for the iOS simulator
+npm run dev:mobile                        # press i for the iOS simulator, w for a web preview
 ```
 
 Generate a secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
@@ -68,10 +83,10 @@ Completion condition — *an admin creates an exercise and a food item, and an a
 
 | Phase | Contents |
 |---|---|
-| **1 Foundation** ✅ | This release |
-| 2 Admin masters | Workout plan builder (drag order, versions, publish, assign), meal templates & assignment, target rules |
-| 3 Mobile logging | Assigned plan & today's workout, active workout logger + rest timer, food diary, saved meals, custom foods, weekly measurements |
-| 4 Analytics | Calorie/macro engine, strength progression, weight & waist charts, weekly report |
+| **1 Foundation** ✅ | Auth, roles, profile, exercise & food masters, admin dashboard, audit log |
+| **2 Admin masters** ✅ | Workout plan builder (drag order, weekday or rotation schedule, versions, publish, duplicate, mobile preview), plan assignment, meal templates & assignment, target defaults, per-member target override |
+| **3 Mobile logging** ✅ | Today's workout, plan view, active workout logger (sets, warm-ups, notes, discomfort, pause/resume, rest timer, add/remove exercises), summary with PRs, history; food diary with targets, food search/recent/custom foods/saved meals/meal plans, nutrition history, weekly measurements, weight trend |
+| 4 Analytics | Strength progression charts, weekly report, admin analytics (with member consent) |
 | 5 Integrations | Apple HealthKit (dev build), Strava OAuth + webhooks, food import adapter, de-duplication |
 | 6 Production | Security review, backups, monitoring, email provider, App Store |
 

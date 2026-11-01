@@ -7,6 +7,10 @@ import { ExercisesPage } from "./pages/ExercisesPage";
 import { FoodsPage } from "./pages/FoodsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { LookupsPage } from "./pages/LookupsPage";
+import { MealTemplatesPage } from "./pages/MealTemplatesPage";
+import { PlanBuilderPage } from "./pages/PlanBuilderPage";
+import { TargetSettingsPage } from "./pages/TargetSettingsPage";
+import { WorkoutPlansPage } from "./pages/WorkoutPlansPage";
 import { UsersPage } from "./pages/UsersPage";
 import { RequireAdmin } from "./routes/RequireAdmin";
 
@@ -22,18 +26,10 @@ export function App() {
           <Route path="lookups" element={<LookupsPage />} />
           <Route path="foods" element={<FoodsPage />} />
           <Route path="audit" element={<AuditLogPage />} />
-          <Route
-            path="workouts"
-            element={<ComingSoonPage title="Workout Management" phase="Phase 2" items={["Plan builder with drag-to-reorder", "Versioned publishing", "Assign plans to users with a start date", "Mobile preview"]} />}
-          />
-          <Route
-            path="meal-plans"
-            element={<ComingSoonPage title="Meal Plans" phase="Phase 2" items={["Meal templates built from the food master", "Automatic calorie and macro totals", "Assign meal plans to users"]} />}
-          />
-          <Route
-            path="targets"
-            element={<ComingSoonPage title="Goals & Targets" phase="Phase 2" items={["Calorie equation (Mifflin-St Jeor)", "Activity multipliers", "Protein, fat and fibre defaults", "Per-user target overrides"]} />}
-          />
+          <Route path="workouts" element={<WorkoutPlansPage />} />
+          <Route path="workouts/:id" element={<PlanBuilderPage />} />
+          <Route path="meal-plans" element={<MealTemplatesPage />} />
+          <Route path="targets" element={<TargetSettingsPage />} />
           <Route
             path="activity"
             element={<ComingSoonPage title="Activity Management" phase="Phase 5" items={["Activity types", "Strava and Apple Health sync status", "Import logs and de-duplication"]} />}

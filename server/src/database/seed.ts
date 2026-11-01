@@ -13,6 +13,11 @@ import { User } from "../modules/users/user.model";
 import { UserPreference } from "../modules/users/userPreference.model";
 import { UserProfile } from "../modules/users/userProfile.model";
 import { normalizedKey, slugify } from "../utils/text";
+import { randomUUID } from "node:crypto";
+import { scaleNutrition, sumNutrition } from "@recomptrack/shared";
+import { MealTemplate } from "../modules/nutrition/nutrition.models";
+import { toFoodDTO } from "../modules/nutrition/foods.service";
+import { WorkoutPlan, WorkoutPlanDay } from "../modules/workouts/workout.models";
 import { connectDatabase, disconnectDatabase } from "./connection";
 import { EQUIPMENT, EXERCISES, FOODS, MUSCLE_GROUPS } from "./seedData";
 
@@ -91,12 +96,45 @@ async function seedFoods() {
   }
 }
 
+/** A published starter plan and meal template so assignment can be tried immediately. */
+async function seedPlans() {
+  const admin = await User.findOne({ role: "ADMIN" }).select({ _id: 1 }).lean();
+  if (!admin) return;
+  if (!(await WorkoutPlan.exists({ name: "Upper / Lower – 4 Days" }))) {
+    const ex = new Map((await Exercise.find().lean()).map((e) => [e.code, e]));
+    const pick = (code: string, sets: number, repMin: number, repMax: number, rest: number, order: number) => {
+      const e = ex.get(code)!;
+      return { exerciseId: e._id, exerciseNameSnapshot: e.name, order, sets, repMin, repMax, restSeconds: rest, notes: null };
+    };
+    const plan = await WorkoutPlan.create({
+      planKey: randomUUID(), version: 1, isLatest: true, name: "Upper / Lower – 4 Days",
+      description: "Four-day upper/lower split for recomposition.", goalType: "RECOMPOSITION", experienceLevel: "BEGINNER",
+      durationWeeks: 8, daysPerWeek: 4, warmUpInstructions: "5 minutes easy cardio, then 2 light sets of the first exercise.",
+      status: "PUBLISHED", publishedAt: new Date(), createdBy: admin._id,
+    });
+    await WorkoutPlanDay.insertMany([
+      { workoutPlanId: plan._id, dayNumber: 1, weekday: 1, dayName: "Upper A", exercises: [pick("CHEST001", 3, 8, 10, 120, 1), pick("BACK001", 3, 10, 12, 90, 2), pick("BACK002", 3, 10, 12, 90, 3)] },
+      { workoutPlanId: plan._id, dayNumber: 2, weekday: 2, dayName: "Lower A", exercises: [pick("LEGS001", 3, 8, 12, 120, 1), pick("LEGS002", 3, 8, 10, 120, 2)] },
+      { workoutPlanId: plan._id, dayNumber: 3, weekday: 4, dayName: "Upper B", exercises: [pick("CHEST002", 3, 8, 12, 90, 1), pick("SHLD001", 3, 6, 10, 120, 2), pick("ARMS001", 3, 10, 15, 60, 3)] },
+      { workoutPlanId: plan._id, dayNumber: 4, weekday: 6, dayName: "Lower B", exercises: [pick("LEGS002", 3, 8, 10, 120, 1), pick("LEGS001", 3, 10, 12, 90, 2)] },
+    ]);
+  }
+  if (!(await MealTemplate.exists({ name: "Chicken and rice lunch" }))) {
+    const foods = await Food.find({ dedupeKey: { $in: ["chicken breast||cooked", "white rice||cooked", "broccoli||raw"] } }).lean();
+    const qty: Record<string, number> = { "chicken breast||cooked": 150, "white rice||cooked": 200, "broccoli||raw": 100 };
+    const ingredients = foods.map((f) => ({ foodId: f._id, foodNameSnapshot: f.name, quantity: qty[f.dedupeKey]! }));
+    const totalNutrition = sumNutrition(foods.map((f) => scaleNutrition(toFoodDTO(f).nutrition, f.servingBasis, qty[f.dedupeKey]!)));
+    await MealTemplate.create({ name: "Chicken and rice lunch", mealType: "LUNCH", ingredients, totalNutrition, tags: ["high-protein"], status: "PUBLISHED", createdBy: admin._id });
+  }
+}
+
 async function main() {
   await connectDatabase(env.MONGODB_URI);
   await seedAdmin();
   await seedLookups();
   await seedExercises();
   await seedFoods();
+  await seedPlans();
   logger.info("Seed complete");
   await disconnectDatabase();
 }
