@@ -1,0 +1,24 @@
+{
+  "name": "recomptrack",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RecompTrack — multi-user fitness platform (mobile app, admin web panel, shared API).",
+  "workspaces": [
+    "shared",
+    "server",
+    "apps/admin",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @recomptrack/server",
+    "dev:admin": "npm run dev -w @recomptrack/admin",
+    "dev:mobile": "npm run start -w @recomptrack/mobile",
+    "seed": "npm run seed -w @recomptrack/server",
+    "build": "npm run build -w @recomptrack/server && npm run build -w @recomptrack/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}
