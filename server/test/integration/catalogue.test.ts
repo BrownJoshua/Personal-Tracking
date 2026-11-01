@@ -145,6 +145,7 @@ describe("food master rules", () => {
       mealType: "LUNCH",
       quantity: 150,
       foodSnapshot: { name: "Chicken breast", brand: null, preparation: "COOKED", servingBasis: 100, servingUnit: "GRAM" },
+      basisNutritionSnapshot: { calories: 165, protein: 31, carbohydrates: 0, fat: 3.6, fibre: 0 },
       nutritionSnapshot: { calories: 247.5, protein: 46.5, carbohydrates: 0, fat: 5.4, fibre: 0 },
     });
 
