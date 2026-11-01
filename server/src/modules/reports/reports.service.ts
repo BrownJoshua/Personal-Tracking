@@ -122,7 +122,7 @@ export async function strengthSeries(userId: string, exerciseId: string, days: n
     if (!any) throw HttpError.notFound("Exercise history");
     return { exerciseId, exerciseName: any.exerciseNameSnapshot, points: [] };
   }
-  const bySession = new Map<string, StrengthSeriesDTO["points"][number]>();
+  const bySession = new Map<string, StrengthSeriesDTO["points"][number] & { at: number }>();
   for (const l of logs) {
     const st = summarizeSets(l.sets);
     if (st.workingSets === 0) continue;
@@ -131,6 +131,7 @@ export async function strengthSeries(userId: string, exerciseId: string, days: n
     const cur = bySession.get(sid);
     // The same exercise can appear twice in one session — merge it.
     bySession.set(sid, {
+      at: at.getTime(),
       date: localDateInZone(at, tz),
       sessionId: sid,
       bestOneRepMax: Math.max(cur?.bestOneRepMax ?? 0, st.bestOneRepMax),
@@ -142,7 +143,8 @@ export async function strengthSeries(userId: string, exerciseId: string, days: n
   return {
     exerciseId,
     exerciseName: logs[logs.length - 1]!.exerciseNameSnapshot,
-    points: [...bySession.values()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)),
+    // Order by completion time, so two sessions on the same day stay in the order they happened.
+    points: [...bySession.values()].sort((a, b) => a.at - b.at).map(({ at: _at, ...p }) => p),
   };
 }
 
