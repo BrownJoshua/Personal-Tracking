@@ -257,3 +257,21 @@ a.btn { text-decoration: none; display: inline-block; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass, .card, .sidebar, .topbar, .modal, .login-card, .builder-day, .preview-phone { background: rgba(19, 32, 52, 0.92); }
 }
+
+/* Charts */
+.chart { margin: 0; display: grid; gap: 8px; }
+.chart-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 600; flex-wrap: wrap; }
+.chart-legend { display: inline-flex; gap: 14px; align-items: center; font-weight: 400; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.chart-legend span { display: inline-flex; gap: 6px; align-items: center; }
+.chart-legend i { display: inline-block; }
+.chart-plot { position: relative; width: 100%; min-width: 0; min-height: 40px; }
+.chart, .chart-grid > *, .two-col > *, .form-grid > * { min-width: 0; }
+.chart-plot svg { display: block; overflow: visible; }
+.chart-plot g[tabindex]:focus { outline: none; }
+.chart-tooltip { position: absolute; top: 0; min-width: 140px; padding: 8px 10px; border-radius: 10px; background: rgba(13, 27, 46, 0.92); border: 1px solid var(--glass-border); pointer-events: none; font-size: 13px; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.reco { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+.reco b { width: 14px; }
+.reco-positive b { color: var(--success); }
+.reco-attention b { color: var(--warning); }
+.reco-neutral b { color: var(--muted); }

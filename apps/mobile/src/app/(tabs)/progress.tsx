@@ -1,73 +1,113 @@
-import { router } from "expo-router";
-import { Text, View } from "react-native";
-import { Button, Card, EmptyNote, ErrorNote, Screen, styles } from "../../components/ui";
+import { Link, router } from "expo-router";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { BarChart, LineChart, chartColors } from "../../components/charts";
+import { Button, Card, Choice, EmptyNote, ErrorNote, Row, Screen, styles } from "../../components/ui";
 import { WeightEntry } from "../../components/WeightEntry";
-import { useMeasurementHistory } from "../../hooks/useMeasurements";
+import { useBodyTrend, useTrainingWeeks } from "../../hooks/useReports";
 import { colors } from "../../theme";
 
-const LABELS: Record<string, string> = {
-  weightKg: "Weight", bodyFatPercent: "Body fat", waistCm: "Waist", hipsCm: "Hips", neckCm: "Neck", shouldersCm: "Shoulders", chestCm: "Chest",
-  leftArmCm: "L arm", rightArmCm: "R arm", leftThighCm: "L thigh", rightThighCm: "R thigh", leftCalfCm: "L calf", rightCalfCm: "R calf",
-};
-const unit = (k: string) => (k === "weightKg" ? "kg" : k === "bodyFatPercent" ? "%" : "cm");
+const RANGES = [
+  { value: "30", label: "30 d" },
+  { value: "90", label: "90 d" },
+  { value: "180", label: "6 mo" },
+  { value: "365", label: "1 yr" },
+] as const;
+type Range = (typeof RANGES)[number]["value"];
 
-/** Simple weight trend from recorded entries (oldest → newest). */
-function WeightTrend({ points }: { points: { at: string; kg: number }[] }) {
-  if (points.length < 2) return <EmptyNote>Log at least two weigh-ins to see a trend.</EmptyNote>;
-  const min = Math.min(...points.map((p) => p.kg));
-  const max = Math.max(...points.map((p) => p.kg));
-  const range = Math.max(0.5, max - min);
-  const first = points[0]!.kg;
-  const last = points[points.length - 1]!.kg;
-  const change = Math.round((last - first) * 10) / 10;
-  return (
-    <View style={{ gap: 8 }}>
-      <Text style={styles.text}>
-        {change === 0 ? "No change" : `${change > 0 ? "+" : ""}${change} kg`} <Text style={styles.muted}>over {points.length} entries</Text>
-      </Text>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", height: 100, gap: 3 }} accessibilityLabel={`Weight from ${first} to ${last} kilograms`}>
-        {points.map((p, i) => (
-          <View key={i} style={{ flex: 1, height: 12 + ((p.kg - min) / range) * 84, borderRadius: 4, backgroundColor: colors.primary, opacity: 0.35 + (0.65 * (i + 1)) / points.length }} />
-        ))}
-      </View>
-      <Text style={[styles.muted, { fontSize: 12 }]}>{min} – {max} kg</Text>
-    </View>
-  );
-}
+const weekLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 
 export default function ProgressScreen() {
-  const history = useMeasurementHistory();
-  const items = history.data?.items ?? [];
-  const weights = items
-    .filter((m) => typeof m.measurements.weightKg === "number")
-    .map((m) => ({ at: m.recordedAt, kg: m.measurements.weightKg as number }))
-    .reverse();
+  const [range, setRange] = useState<Range>("90");
+  const body = useBodyTrend(Number(range));
+  const training = useTrainingWeeks(8);
+  const b = body.data;
+  const rate = b?.weeklyRateKg;
+
   return (
     <Screen>
       <Card title="Morning weight">
         <WeightEntry />
       </Card>
-      <Card title="Weight trend">
-        <WeightTrend points={weights} />
-      </Card>
-      <Button title="Log weekly measurements" variant="secondary" onPress={() => router.push("/progress/measurements")} />
-      <Card title="History">
-        <ErrorNote error={history.error} />
-        {items.length ? (
-          items.map((m) => (
-            <View key={m.id} style={styles.listItem}>
-              <Text style={styles.muted}>{new Date(m.recordedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</Text>
-              <Text style={styles.listTitle}>
-                {Object.entries(m.measurements)
-                  .map(([k, v]) => `${LABELS[k] ?? k} ${v} ${unit(k)}`)
-                  .join(" · ")}
-              </Text>
-            </View>
-          ))
+
+      <Row style={{ gap: 12 }}>
+        <Link href="/progress/weekly" asChild>
+          <Pressable style={{ flex: 1 }}>
+            <Card title="Weekly report"><Text style={styles.text}>This week's summary →</Text></Card>
+          </Pressable>
+        </Link>
+        <Link href="/progress/strength" asChild>
+          <Pressable style={{ flex: 1 }}>
+            <Card title="Strength"><Text style={styles.text}>Lift progression →</Text></Card>
+          </Pressable>
+        </Link>
+      </Row>
+
+      <Choice options={[...RANGES]} value={range} onChange={setRange} />
+      <ErrorNote error={body.error} />
+
+      <Card title="Weight">
+        {b && b.weight.length > 0 ? (
+          <>
+            <Row style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+              <View>
+                <Text style={styles.statValue}>{b.weight[b.weight.length - 1]!.average7d.toFixed(1)} kg</Text>
+                <Text style={styles.muted}>7-day average</Text>
+              </View>
+              {rate !== null && rate !== undefined && (
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.statValue}>{rate > 0 ? "+" : ""}{rate} kg</Text>
+                  <Text style={styles.muted}>per week (trend)</Text>
+                </View>
+              )}
+            </Row>
+            <LineChart
+              unit="kg"
+              summary={`Weight from ${b.weight[0]!.valueKg} to ${b.weight[b.weight.length - 1]!.valueKg} kilograms over ${b.weight.length} days; 7-day average ${b.weight[b.weight.length - 1]!.average7d}.`}
+              series={[
+                { key: "raw", label: "Daily weigh-in", color: chartColors.context, style: "dots", points: b.weight.map((w) => ({ x: w.date, y: w.valueKg })) },
+                { key: "avg", label: "7-day average", color: chartColors.series1, style: "line", points: b.weight.map((w) => ({ x: w.date, y: w.average7d })) },
+              ]}
+            />
+            {b.targetWeightKg ? <Text style={styles.muted}>Goal weight {b.targetWeightKg} kg</Text> : null}
+          </>
         ) : (
-          <EmptyNote>No measurements yet.</EmptyNote>
+          <EmptyNote>Log a few morning weigh-ins to see your trend.</EmptyNote>
         )}
       </Card>
+
+      <Card title="Waist">
+        {b && b.waist.length > 0 ? (
+          <LineChart
+            unit="cm"
+            summary={`Waist from ${b.waist[0]!.valueCm} to ${b.waist[b.waist.length - 1]!.valueCm} centimetres.`}
+            series={[{ key: "waist", label: "Waist", color: chartColors.series2, style: "line", points: b.waist.map((w) => ({ x: w.date, y: w.valueCm })) }]}
+          />
+        ) : (
+          <EmptyNote>No waist measurements in this range.</EmptyNote>
+        )}
+        <Button small variant="secondary" title="Log weekly measurements" onPress={() => router.push("/progress/measurements")} />
+      </Card>
+
+      <Card title="Training volume · last 8 weeks">
+        <ErrorNote error={training.error} />
+        {training.data && training.data.some((w) => w.sessions > 0) ? (
+          <>
+            <BarChart
+              unit="kg"
+              summary={`Weekly training volume over 8 weeks: ${training.data.map((w) => Math.round(w.volumeKg)).join(", ")} kilograms.`}
+              formatLabel={weekLabel}
+              data={training.data.map((w) => ({ label: w.weekStart, value: w.volumeKg }))}
+            />
+            <Text style={styles.muted}>
+              {training.data.reduce((a, w) => a + w.sessions, 0)} workouts · {training.data.reduce((a, w) => a + w.workingSets, 0)} working sets. Tap a bar for the week.
+            </Text>
+          </>
+        ) : (
+          <EmptyNote>Complete a workout to start tracking volume.</EmptyNote>
+        )}
+      </Card>
+      <Text style={[styles.muted, { fontSize: 12, color: colors.muted }]}>Cycling and activity from Apple Health/Strava will appear here once connected.</Text>
     </Screen>
   );
 }

@@ -150,3 +150,22 @@ Request/response types: `shared/src/types/index.ts`. Validation schemas: `shared
 | POST | `/nutrition/meal-plans/:assignmentId/log` | Logs each ingredient |
 | GET | `/nutrition/targets` | `{ target, missing[], reviewDue }` |
 | POST | `/nutrition/targets/recalculate` | |
+
+# Phase 4 — Analytics
+
+### Member reports — `/reports` 🔒 own records only
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/reports/body?days=90` | Daily weight (multiple weigh-ins averaged), trailing 7-calendar-day average, waist entries, least-squares weekly rate, goal |
+| GET | `/reports/strength` | Every exercise with completed sets: sessions, first/latest/best estimated 1RM |
+| GET | `/reports/strength/:exerciseId?days=180` | Per-session best e1RM (Epley), heaviest working set, volume, working sets |
+| GET | `/reports/training?weeks=8` | Weekly workouts, working sets, volume, minutes (user's time zone) |
+| GET | `/reports/weekly?week=YYYY-MM-DD` | Monday–Sunday report: nutrition averages over **logged days only**, training vs plan, PRs, discomfort count, weekly average weight vs previous week, waist change, and rule-based recommendations |
+
+### Admin analytics 🔒 ADMIN
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/admin/analytics?weeks=12` | Aggregate counts per UTC week: new members, active members (recorded anything), workouts, food entries, measurements; top exercises; plan adoption. No individual values. |
+| GET | `/admin/users/:id/report?week=` | 403 `CONSENT_REQUIRED` unless the member shares something. Nutrition section needs `shareNutritionWithAdmin`; training, body and the 90-day weight trend need `shareProgressWithAdmin`. Audited as `USER_REPORT_VIEWED`. |

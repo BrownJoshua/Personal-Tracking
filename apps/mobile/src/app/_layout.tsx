@@ -49,6 +49,9 @@ function RootNavigator() {
         <Stack.Screen name="nutrition/custom-food" options={{ title: "New custom food", presentation: "modal" }} />
         <Stack.Screen name="nutrition/history" options={{ title: "Nutrition history" }} />
         <Stack.Screen name="progress/measurements" options={{ title: "Body measurements" }} />
+        <Stack.Screen name="progress/weekly" options={{ title: "Weekly report" }} />
+        <Stack.Screen name="progress/strength/index" options={{ title: "Strength" }} />
+        <Stack.Screen name="progress/strength/[id]" options={{ title: "Strength" }} />
       </Stack.Protected>
     </Stack>
   );

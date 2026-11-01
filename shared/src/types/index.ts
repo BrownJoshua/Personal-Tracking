@@ -410,3 +410,99 @@ export interface AdminUserPlansDTO {
   mealAssignments: { id: Id; mealTemplateId: Id; name: string; mealType: string; startDate: IsoDateTime; status: string }[];
   target: NutritionTargetDTO | null;
 }
+
+// ---- Reports & analytics (Phase 4) -------------------------------------
+export interface BodyTrendDTO {
+  range: { from: string; to: string };
+  weight: { date: string; valueKg: number; average7d: number }[];
+  waist: { date: string; valueCm: number }[];
+  weeklyRateKg: number | null;
+  goalType: GoalType | null;
+  targetWeightKg: number | null;
+}
+
+export interface StrengthExerciseSummaryDTO {
+  exerciseId: Id;
+  exerciseName: string;
+  sessions: number;
+  lastPerformedAt: IsoDateTime;
+  bestOneRepMax: number;
+  latestOneRepMax: number;
+  firstOneRepMax: number;
+}
+
+export interface StrengthSeriesDTO {
+  exerciseId: Id;
+  exerciseName: string;
+  points: { date: string; sessionId: Id; bestOneRepMax: number; heaviestKg: number; volumeKg: number; workingSets: number }[];
+}
+
+export interface TrainingWeekDTO {
+  weekStart: string;
+  sessions: number;
+  workingSets: number;
+  volumeKg: number;
+  durationMinutes: number;
+}
+
+export interface WeeklyReportDTO {
+  weekStart: string;
+  weekEnd: string;
+  goalType: GoalType | null;
+  nutrition: {
+    daysLogged: number;
+    avgCalories: number | null;
+    avgProtein: number | null;
+    avgCarbohydrates: number | null;
+    avgFat: number | null;
+    avgFibre: number | null;
+    target: { calories: number; protein: number } | null;
+    days: { date: string; entries: number; calories: number; protein: number }[];
+  };
+  training: {
+    sessions: number;
+    plannedPerWeek: number | null;
+    workingSets: number;
+    volumeKg: number;
+    durationMinutes: number;
+    personalRecords: { exerciseName: string; kind: string; value: number }[];
+    discomfortReports: number;
+  };
+  body: {
+    weighIns: number;
+    avgWeightKg: number | null;
+    prevAvgWeightKg: number | null;
+    changeKg: number | null;
+    latestWaistCm: number | null;
+    waistChangeCm: number | null;
+  };
+  recommendations: { kind: string; tone: "positive" | "neutral" | "attention"; text: string }[];
+}
+
+export interface AdminUserReportDTO {
+  user: { id: Id; name: string; email: string };
+  consent: { progress: boolean; nutrition: boolean };
+  /** Sections are null when the member hasn't shared them. */
+  report: {
+    weekStart: string;
+    weekEnd: string;
+    nutrition: WeeklyReportDTO["nutrition"] | null;
+    training: WeeklyReportDTO["training"] | null;
+    body: WeeklyReportDTO["body"] | null;
+  };
+  bodyTrend: BodyTrendDTO | null;
+}
+
+export interface AdminAnalyticsDTO {
+  weeks: {
+    weekStart: string;
+    newUsers: number;
+    activeUsers: number;
+    workoutsCompleted: number;
+    foodLogEntries: number;
+    measurementEntries: number;
+  }[];
+  topExercises: { exerciseId: Id; exerciseName: string; sessions: number; users: number }[];
+  planAdoption: { planName: string; activeAssignments: number }[];
+  totals: { members: number; membersWithPlan: number; membersLoggingFoodThisWeek: number; membersTrainingThisWeek: number };
+}

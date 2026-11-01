@@ -5,6 +5,7 @@ import { USER_STATUSES, enumLabel, type AdminUserDetailDTO, type Paginated, type
 import { ConfirmDialog, EmptyState, EnumSelect, ErrorBanner, Modal, PageHeader, Pagination, StatusBadge, formatDate } from "../components/ui";
 import { useAuth } from "../hooks/useAuth";
 import { UserPlansPanel } from "../components/UserPlansPanel";
+import { UserReportPanel } from "../components/UserReportPanel";
 import { useDebounced } from "../hooks/useDebounced";
 import { api } from "../services/api";
 
@@ -120,8 +121,8 @@ export function UsersPage() {
               <dt>Shares nutrition</dt><dd>{detail.data.sharing.shareNutritionWithAdmin ? "Yes" : "No"}</dd>
             </dl>
             <p className="muted small">
-              Personal measurements, food logs and photos are private. They will only be visible here
-              when the user opts in to sharing. This view has been recorded in the audit log.
+              Personal measurements, food logs and photos are private. Only what the member chooses to share
+              appears in their progress report below. This view has been recorded in the audit log.
             </p>
             {detail.data.user.id !== me?.id && (
               <div className="row-actions">
@@ -140,6 +141,7 @@ export function UsersPage() {
               </div>
             )}
             {detail.data.user.role === "USER" && detail.data.user.status === "ACTIVE" && <UserPlansPanel user={detail.data.user} />}
+            {detail.data.user.role === "USER" && <UserReportPanel userId={detail.data.user.id} sharing={detail.data.sharing} />}
           </div>
         )}
       </Modal>

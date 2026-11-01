@@ -12,7 +12,7 @@ const NAV = [
   { to: "/meal-plans", label: "Meal Plans", hint: "Meal templates" },
   { to: "/targets", label: "Goals & Targets", hint: "Calculation defaults" },
   { to: "/activity", label: "Activity Management", hint: "Phase 5", soon: true },
-  { to: "/reports", label: "Reports & Analytics", hint: "Phase 4", soon: true },
+  { to: "/reports", label: "Reports & Analytics", hint: "Platform activity" },
   { to: "/audit", label: "Audit Log", hint: "Admin changes" },
   { to: "/settings", label: "System Settings", hint: "Phase 6", soon: true },
 ];

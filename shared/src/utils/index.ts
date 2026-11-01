@@ -3,3 +3,4 @@ export * from "./units";
 export * from "./dates";
 export * from "./targets";
 export * from "./workout";
+export * from "./analytics";
